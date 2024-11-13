@@ -6,89 +6,119 @@
 /*   By: gugomes- <gugomes-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/28 14:10:56 by gugomes-          #+#    #+#             */
-/*   Updated: 2024/11/12 18:09:27 by gugomes-         ###   ########.fr       */
+/*   Updated: 2024/11/13 18:24:44 by gugomes-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-#include <stdio.h>
 
-static void	ft_free(char **to_free)
+void *ft_memcpy(void *dest, const void *src, size_t n)
 {
-	if (to_free && *to_free)
-	{
-		free(*to_free);
-		*to_free = NULL;
-	}
+    size_t i;
+    unsigned char *d = (unsigned char *)dest;
+    const unsigned char *s = (const unsigned char *)src;
+    for (i = 0; i < n; i++)
+        d[i] = s[i];
+    return dest;
 }
 
-static char *fill_line(int fd, char *rest)
+char *ft_realloc(char *ptr, size_t old_size, size_t new_size)
+{
+    char *new_ptr;
+
+    if (new_size <= old_size)
+        return ptr;
+    new_ptr = (char *)malloc(new_size);
+    if (!new_ptr)
+    {
+        free(ptr);
+        return NULL;
+    }
+    ft_memcpy(new_ptr, ptr, old_size);
+    free(ptr);
+    return new_ptr;
+}
+
+static char *read_and_fill(int fd, char *rest)
 {
     char buffer[BUFFER_SIZE + 1];
-    ssize_t b_read;
-    char *temp;
+    ssize_t bytes_read;
+    size_t rest_len = rest ? ft_strlen(rest) : 0;
 
-    b_read = read(fd, buffer, BUFFER_SIZE);
-    while (b_read > 0)
+    bytes_read = read(fd, buffer, BUFFER_SIZE);
+    while (bytes_read > 0)
     {
-        buffer[b_read] = '\0';
-        if (!rest)
-            rest = ft_strdup("");
-        temp = rest;
-        rest = ft_strjoin(rest, buffer);
-        ft_free(&temp);
+        buffer[bytes_read] = '\0';
+        char *temp = ft_realloc(rest, rest_len, rest_len + bytes_read + 1);
+        if (!temp)
+            return NULL;
+        rest = temp;
+        ft_memcpy(rest + rest_len, buffer, bytes_read + 1);
+        rest_len += bytes_read;
         if (ft_strchr(buffer, '\n'))
             break;
-        b_read = read(fd, buffer, BUFFER_SIZE);
+        bytes_read = read(fd, buffer, BUFFER_SIZE);
     }
-    return (rest);
+    if (bytes_read == 0 && (!rest || rest[0] == '\0'))
+    {
+        free(rest);
+        return NULL;
+    }
+    return rest;
 }
 
-static char *append_line(char *line_buffer)
+static char *extract_line_and_update_rest(char **rest)
 {
-    ssize_t i = 0;
+    size_t len = 0;
+    char *line;
+    char *new_rest;
 
-    if (!line_buffer)
-        return (ft_free(&line_buffer), NULL);
-    while (line_buffer[i] != '\n' && line_buffer[i] != '\0')
-        i++;
-    if (line_buffer[i] == '\n' && line_buffer[i + 1] == '\0')
-        return (NULL);
-    return (ft_substr(line_buffer, i + 1, ft_strlen(line_buffer) - i - 1));
+    if (!*rest)
+        return NULL;
+    while ((*rest)[len] && (*rest)[len] != '\n')
+        len++;
+    
+    if ((*rest)[len] == '\n')
+        line = ft_substr(*rest, 0, len + 1);
+    else
+        line = ft_substr(*rest, 0, len);
+    
+    if (!line)
+        return NULL;
+    
+    if ((*rest)[len] == '\n')
+        new_rest = ft_substr(*rest, len + 1, ft_strlen(*rest) - len);
+    else
+        new_rest = ft_substr(*rest, len, ft_strlen(*rest) - len);
+    
+    free(*rest);
+    *rest = new_rest;
+    return line;
 }
 
 char *get_next_line(int fd)
 {
     static char *rest;
     char *line;
-    char *new_rest;
 
     if (fd < 0 || BUFFER_SIZE <= 0)
-        return (ft_free(&rest), NULL);
-    rest = fill_line(fd, rest);
+    {
+        free(rest);
+        rest = NULL;
+        return NULL;
+    }
+    rest = read_and_fill(fd, rest);
     if (!rest)
-        return (NULL);
-    if (rest[0] == '\n')
+        return NULL;
+    
+    line = extract_line_and_update_rest(&rest);
+    if (!line)
     {
-        line = ft_strdup("\n");
-        new_rest = append_line(rest);
-        ft_free(&rest);
-        rest = new_rest;
-        return (line);
+        free(rest);
+        rest = NULL;
     }
-    if (!ft_strchr(rest, '\n'))
-    {
-        line = ft_strdup(rest);
-        ft_free(&rest);
-        return (line);
-    }
-    line = ft_substr(rest, 0, ft_strchr(rest, '\n') - rest + 1);
-    new_rest = append_line(rest);
-    ft_free(&rest);
-    rest = new_rest;
-    return (line);
+    return line;
 }
-
 
 
 // int main(void)

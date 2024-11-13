@@ -6,7 +6,7 @@
 /*   By: gugomes- <gugomes-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 14:04:35 by gugomes-          #+#    #+#             */
-/*   Updated: 2024/11/12 13:39:26 by gugomes-         ###   ########.fr       */
+/*   Updated: 2024/11/13 17:35:46 by gugomes-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,33 +22,45 @@ size_t ft_strlen(const char *s)
 
 char *ft_strdup(const char *src)
 {
-    char *dup;
     size_t len = ft_strlen(src);
-    dup = (char *)malloc(sizeof(char) * (len + 1));
+    char *dup = (char *)malloc(sizeof(char) * (len + 1));
     if (!dup)
         return NULL;
-    for (size_t i = 0; i < len; i++)
+
+    size_t i = 0;
+    while (i < len)
+    {
         dup[i] = src[i];
-    dup[len] = '\0';
+        i++;
+    }
+    dup[i] = '\0';
     return dup;
 }
 
 char *ft_strchr(const char *s, int c)
 {
-    while (s && *s && *s != (char)c)
+    while (s && *s)
+    {
+        if (*s == (char)c)
+            return (char *)s;
         s++;
-    return (*s == (char)c) ? (char *)s : NULL;
+    }
+    return (c == '\0') ? (char *)s : NULL;
 }
 
-char *ft_substr(char const *s, size_t start, size_t len)
+char *ft_substr(const char *s, size_t start, size_t len)
 {
     if (!s || start >= ft_strlen(s))
         return NULL;
+    size_t max_len = ft_strlen(s) - start;
+    if (len > max_len)
+        len = max_len;
+
     char *sub = (char *)malloc((len + 1) * sizeof(char));
     if (!sub)
         return NULL;
     size_t i = 0;
-    while (i < len && s[start + i])
+    while (i < len)
     {
         sub[i] = s[start + i];
         i++;
@@ -61,6 +73,7 @@ char *ft_strjoin(const char *s1, const char *s2)
 {
     if (!s1 || !s2)
         return NULL;
+
     size_t len1 = ft_strlen(s1);
     size_t len2 = ft_strlen(s2);
     char *str = (char *)malloc(sizeof(char) * (len1 + len2 + 1));
@@ -82,3 +95,4 @@ char *ft_strjoin(const char *s1, const char *s2)
     str[i] = '\0';
     return str;
 }
+
